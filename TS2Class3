@@ -1,0 +1,142 @@
+
+
+library(forecast)
+library(haven)
+library(fma)
+library(expsmooth)
+library(lmtest)
+library(zoo)
+library(seasonal)
+library(imputeTS)
+library(lubridate)
+library(tidyverse)
+library(tseries)
+install.packages("basicTrendline")
+library(basicTrendline)
+
+
+#reading the file here, from CSV to R. Then I create two variables for Month and Year
+pm <- read.csv("C:/Users/Owner/Documents/HW1/PM_2_5_Raleigh2 (2).csv")
+pm$mon <- month(as.POSIXlt(pm$Date, format="%m/%d/%Y")) 
+pm$yr <- year(as.POSIXlt(pm$Date, format="%m/%d/%Y"))
+
+
+View(pm)
+
+#testing the as.Date function
+class(pm$Date)
+as.Date(pm$Date[1])
+
+#now I aggregate the data to Monthly
+?as.Date()
+Month<- pm%>%
+  group_by(mon,yr)%>%
+  summarize(pm1=mean(Daily.Mean.PM2.5.Concentration))
+
+View(Month)
+
+#creating time series object. We're going to roll this to Monthly to make it easier
+#make that judgement based off the data and problem
+Hello.ts <- ts(Month$pm1, start = 2014, frequency = 12)
+ 
+plot(Hello.ts)
+
+#we should separate them into training and Test
+Train<-subset(Hello.ts,end=length(Hello.ts)-6)
+Test<-subset(Hello.ts,end=length(Hello.ts)-5)
+
+#I think it's good to explore patterns first
+decomp_stl <- stl(Train, s.window = 7)
+plot(decomp_stl)
+
+#Determining whether we have a Random Walk
+nsdiffs(Train)
+nsdiffs(Train,test="ch")
+#both turned out to be 0, so we don't take differences
+
+#let's try Dummy Variables first
+month1 <- seasonaldummy(Train)
+DummyModel  <- tslm(Train~ month1)
+tsdisplay(residuals(DummyModel))
+ts_residuals=residuals(DummyModel)
+
+#exploring trends in residuals
+decomp_stl1 <- stl(ts_residuals, s.window = 7)
+plot(decomp_stl1)
+
+#we see that there is a trend in our residuals. We should ADF test to see what type of trend we have
+adf.test(ts_residuals, alternative = "stationary", k=0)
+adf.test(ts_residuals, alternative = "stationary", k=1)
+adf.test(ts_residuals, alternative = "stationary", k=2) #this says stationary, our trend is deterministic.
+
+#the earlier plot showed us that our ts_residuals have a quadratic pattern, so we have to fit a quadaratic trend
+
+thisishard<-seq_along(ts_residuals)
+thisishard2<-matrix(c(thisishard, thisishard^2), nrow=length(thisishard))
+newmodel<-forecast::Arima(ts_residuals,order=c(0,0,0),xreg = thisishard2) 
+
+plot(newmodel$residuals) #plots residuals 
+
+#use acf and pacf to see if residuals are interdependent, spikes in ACF are for MA, PACF are for AR
+
+Acf(newmodel$residuals, main = "")$acf
+Pacf(newmodel$residuals, main = "")$acf
+
+
+#ljung box test, we reject null so we still have to do ARIMA, this uses ARIMA(0,0,0)
+White.LB <- rep(NA, 10)
+for(i in 1:10){
+  White.LB[i] <- Box.test(newmodel$residuals, lag = i, type = "Ljung", fitdf = 1)$p.value
+}
+
+White.LB <- pmin(White.LB, 0.2)
+barplot(White.LB, main = "Ljung-Box Test P-values", ylab = "Probabilities", xlab = "Lags", ylim = c(0, 0.2))
+abline(h = 0.01, lty = "dashed", col = "black")
+abline(h = 0.05, lty = "dashed", col = "black")
+
+#our Ljung Box shows that the null is rejected, p-values are low. We still need to model for correlation. 
+#Choose the AR and MA terms based on PACF and ACF plots and test for White Noise. 
+#in the above Ljung Box Test for White Noise, the bars were not high (we want high bars unlike SAS plot)
+#i am going to try a new set of AR, MA terms
+a<-Arima(newmodel$residuals, order = c(2, 0, 1)) #this is just a rough estimate having 3 AR Terms and 5 MA. 
+
+White.LB <- rep(NA, 10)
+for(i in 1:10){
+  White.LB[i] <- Box.test(a$residuals, lag = i, type = "Ljung", fitdf = 1)$p.value
+}
+
+White.LB <- pmin(White.LB, 0.2)
+barplot(White.LB, main = "Ljung-Box Test P-values", ylab = "Probabilities", xlab = "Lags", ylim = c(0, 0.2))
+abline(h = 0.01, lty = "dashed", col = "black")
+abline(h = 0.05, lty = "dashed", col = "black")
+
+#checking for White Noise with ARMA (3,0,3)
+a<-Arima(newmodel$residuals, order = c(3, 0, 3)) #this is just a rough estimate having 3 AR Terms and 5 MA. 
+
+White.LB <- rep(NA, 10)
+for(i in 1:10){
+  White.LB[i] <- Box.test(a$residuals, lag = i, type = "Ljung", fitdf = 1)$p.value
+}
+
+White.LB <- pmin(White.LB, 0.2)
+barplot(White.LB, main = "Ljung-Box Test P-values", ylab = "Probabilities", xlab = "Lags", ylim = c(0, 0.2))
+abline(h = 0.01, lty = "dashed", col = "black")
+abline(h = 0.05, lty = "dashed", col = "black")
+
+#based off of this, an ARMA (3,0,3) fully achieved white noise. Maybe we can play around and see if lesser terms are possible.
+#when I tried ARMA (2,0,2) I get some type of error. Hmm, weird.
+#ARMA (2,0,1) gets white Noise too, barely for some lags
+
+#QUESTIONS for Dr. Simmons/Labarr: Get the flow first. See if results are accurate.
+
+
+#FLOW CHART. IGNORE 
+# 1. Import data
+# 2. aggregate if necessary
+# 3. create a time series object
+# 4. Decompositon to explore data
+# 5. See if there is a trend, seasonality
+# 6. Seperate into training and validation
+# 7. First take care of seasonality then trend if you have
+
+
