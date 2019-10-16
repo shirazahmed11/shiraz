@@ -1,0 +1,52 @@
+#files
+
+#inp = open('input.txt', 'r') the variable is inp, r is for read, the name of the file is 'input.txt'
+
+#python finds next line by the file pointer
+
+#to write files, out=open('output.txt', 'w')
+
+import os
+cwd = os.getcwd()  # Get the current working directory (cwd)
+files = os.listdir(cwd)  # Get all the files in that directory
+print("Files in %r: %s" % (cwd, files))
+
+#importing CSV, I downloaded pop.csv from class website
+
+#here is the process: open the CSV file with open()
+#attach a CSV reader 
+#use _next()_ to read and pase header line(s)
+#use a for loop to read and pase the rows in the CSV file. Each row is returned as a list of column values in the row line
+#close the CSV file
+
+import csv
+inp = open(r'C:\Users\sahmed11\Downloads\pop.csv','r',newline='' ) #newline is necessary for writing but not reading. Adjust working directory
+reader = csv.reader( inp ) #creates the reader
+header = reader.__next__() #skips the header
+for row in reader: #each line is called row, if the row 6 and 7 are equal (it's a state row as population is equal, otherwise it is a city row)
+    if row[6]==row[7]:
+        print('The State of',row[7],'has population',row[11])
+    else:
+        print( 'City', row[ 6 ], 'in state', row[ 7 ], 'has population', row[ 11 ] )
+
+inp.close()        
+
+#importing CSV, I downloaded pop.csv from class website
+
+#here is the process: open the CSV file with open()
+#attach a CSV reader 
+#use _next()_ to read and pase header line(s)
+#use a for loop to read and pase the rows in the CSV file. Each row is returned as a list of column values in the row line
+#close the CSV file
+
+import csv
+inp = open(r'C:\Users\sahmed11\Downloads\pop.csv','r',newline='' ) #newline is necessary for writing but not reading
+reader = csv.reader( inp ) #creates the reader
+header = reader.__next__() #skips the header
+for row in reader: #each line is called row, if the row 6 and 7 are equal (it's a state row as population is equal, otherwise it is a city row)
+    if row[6]==row[7]:
+        print('The State of',row[7],'has population',row[11])
+    else:
+        print( 'City', row[ 6 ], 'in state', row[ 7 ], 'has population', row[ 11 ] )
+
+inp.close()        
