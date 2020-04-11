@@ -59,3 +59,35 @@ plot(model2)
 #residuals vs fitted looks good
 #q-q plot looks good
 
+############################attempting interaction#######################
+#first step is plotting the data for non-smokers, in blue
+plot(Age[Smoke=="no"], LungCap[Smoke=="no"], col="blue", ylim=c(0,15), xlim=c(0,20), xlab="Age",
+     ylab="LungCap", main="LungCap vs Age, Smoke")
+
+#adding in points for the smokers
+points(Age[Smoke=="yes"], LungCap[Smoke=="yes"], col="red", pch=16)
+
+#legend
+legend(1,15, legend=c("nonsmoker", "smoker"), col=c("blue", "red"), pch=c(1,16), bty="n")
+
+#the affect of Age is modified by Smoking
+
+#fitting a regression model with Age, Smoke, and the interaction
+model3<-lm(LungCap~Age*Smoke) #we can also do lm(LungCap~Age+Smoke+Age:Smoke)
+coef(model3)
+#we can now calculate the regression lines for smokers (1) and nonsmokers (0, this is binary variable)
+
+#adding in the regression lines
+abline(a=1.052, b=.558, col="blue", lwd=3) #a value got from nonsmokers regression line
+abline(a=1.278, b=.490, col="red", lwd=3) 
+#get values from regression lines by plugging in coefficients from coef(model3) into equation
+
+#should we include this interaction? 
+#does it make sense conceptually? Does it change with age? probably not
+#is the interaction signficiant
+summary(model3)
+#p-value is high, NOT significant
+#since both questions' answers are not yes, we dont include the interaction
+
+
+
