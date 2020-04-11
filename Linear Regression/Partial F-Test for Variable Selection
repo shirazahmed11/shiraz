@@ -1,0 +1,32 @@
+########Partial F Test for Variable Selection in Linear Regression########################
+#lets say we have a model predicting LungCap with Age
+#the reduced model does not have Age^2 Let's compare the two
+#does removing Age^2 decrease the error?
+
+#null is the models do not differ significantly
+#larger the test statistic, the larger the difference between two models' SSE
+
+#load in the LungCapData, either from R or from Computer
+
+#full model
+FullModel<-lm(LungCap~Age+I(Age^2))
+#reduced model
+reducedmodel<-lm(LungCap~Age)
+
+#summary
+summary(FullModel)
+#R^2 of .6727 and Residual Standard Error of 1.525
+summary(reducedmodel)
+#R^2 of .6719 and RSE of 1.526
+
+#partial F Test
+anova(reducedmodel, FullModel)
+#p-valye us 0.172 so we fail to reject the null hypothesis 
+#so we dont have evidence full model is signifcantly better
+
+#another example, where we have Age, Height, Gender, Smokers in Full and we drop Height in Reduced
+FullModel2<-lm(LungCap~Age+Gender+Smoke+Height)
+reducedmodel2<-lm(LungCap~Age+Gender+Smoke)
+
+anova(reducedmodel2, FullModel2)
+#reject the null since p-value is much lower so the Full Model is significantly better (it also has lower SSE/RSS)
