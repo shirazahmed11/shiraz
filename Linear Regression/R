@@ -1,0 +1,61 @@
+##importing the data###
+LungCapData<-read.csv('C:\\Users\\shira\\Documents\\R scripts.csv', header = TRUE)
+View(LungCapData)
+
+#we want to examine the assumptions for a model of the relationship between Age (x variable) and Lung Capacity
+names(LungCapData)
+Age<-LungCapData$Age
+LungCap<-LungCapData$LungCap
+Height<-LungCapData$Height
+Smoke<-LungCapData$Smoke
+Gender<-LungCapData$Gender
+Caesarean<-LungCapData$Caesarean
+plot(Age, LungCap)
+
+#fitting linear regression
+mod<-lm(LungCap~Age)
+summary(mod)
+abline(mod) #adding regression line to model
+
+##Assumptions
+# 1) the Y-Values (or errors, 'e') are independent.
+#this is confirmed only by data context
+
+# 2) the Y-values can be expressed as a linear function of the x variable
+# 3) equal variances (homoscedasticity) 
+# 4) normal distribution of errors
+
+plot(mod) #hit return in the console
+#the residual plot has a flat red line which shows linearity is met
+#scattered points show constant variation
+#the q-q plot shows the normal distribution of errors, it follows the line
+par(mfrow=c(2,2)) #doing this and next shows all 4 plots on one screen
+plot(mod)
+
+###################Multiple Linear Regression#######
+
+#our outcome variable is lungCap
+#age and height are our explanatory variables
+model1<-lm(LungCap~Age+Height)
+summary(model1)
+#r2 of 0.843, approx 84% of variation in LungCap can be explained by Age and Height
+#y-intercept is mean LungCap for someone with age and height as 0
+#Age estimate is .1264 meaning for every 1 year increase in age, LungCap increases by .1264 controlling for height
+
+#calculating Pearson's Correlatoon for Age and Height
+cor(Age, Height, method='pearson')
+#.8357, the two are highly correlated, we need to deal with collinearity
+
+#creating a confidence interval
+confint(model1, conf.level=0.95)
+#95% confident that true age effect is between (interval)
+
+#fit a model using all of our variables
+model2<-lm(LungCap~Age+Height+Smoke+Gender+Caesarean)
+summary(model2)
+
+#checking assumptions
+plot(model2)
+#residuals vs fitted looks good
+#q-q plot looks good
+
