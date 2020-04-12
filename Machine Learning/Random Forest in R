@@ -1,0 +1,61 @@
+####################################BACKGROUND########################
+#want to predict the occurrence of diabetes and take appropriate steps beforehand to prevent it
+#now we predict the vulnerable patients
+install.packages("randomForest")
+library(randomForest)
+install.packages("caret")
+library(caret)
+install.packages("e1071")
+library(e1071)
+#loading the data
+diabet<-read.csv("C:\\Users\\shira\\Documents\\Side Projects\\diabetes.csv")
+View(diabet)
+
+#since target variable is yes/no, and rest of our variables are not, we convert outcome to factor for consistency
+diabet$Outcome<-as.factor(diabet$Outcome)
+diabet_train$Outcome<-as.factor(diabet_train$Outcome)
+diabet_test$Outcome<-as.factor(diabet_test$Outcome)
+
+#dividing the data into training and test data
+set.seed(2)
+id<-sample(2, nrow(diabet), prob=c(0.7, 0.3), replace = TRUE) #70/30 percent split
+diabet_train<-diabet[id==1,]
+diabet_test<-diabet[id==2,]
+
+#trying to figure out the best mtry value
+bestmtry<-tuneRF(diabet_train, diabet_train$Outcome,
+                 stepFactor=1.2, improve=0.01, trace=T, plot=T) #optimized number of random variables we need to choose
+#we have tuneRF(data, dependent variable, stepFactor, ....)
+#stepFactor means every iteration, the factor increases by 1.2
+#improve= if there is an improvement of 0.01 then iteration will go on else it stops and we get final value of m (variables to pick)
+
+#the plot indicates that the most optimized value of number of variables is 3 (OOB is prediction error)
+
+##Random Forest
+diabet_forest<-randomForest(Outcome~.,data = diabet_train)
+
+diabet_forest
+#Summary
+#we have implemented 500 trees
+#the number of variables =2 means that at each node in decision tree, every node splits into 2 daughter nodes
+#error is 26.13 percent
+#then look at Confusion matrix, which is summarized below
+    #the model predicted 296 wont have diabetes, and 296 did not get diabetes
+    #87 were predicted to not get diabetes but were recorded that they had
+    #52 were predicted to have diabetes but did not
+    #97 were predicted to get diabetes and they did
+
+#gives Gini Index
+importance(diabet_forest)
+#glucose hsa the maximum value, it will be the most significant variable in decision tree,
+#then it is BMI
+
+varImpPlot(diabet_forest)
+
+
+###now we Validate the model##
+pred1_diabet<-predict(diabet_forest, newdata=diabet_test, type="class")
+pred1_diabet
+
+confusionMatrix(table(pred1_diabet, diabet_test$Outcome)) 
+#accuracy is 80.51%
